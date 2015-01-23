@@ -5,7 +5,6 @@
 #include <boost/format.hpp>
 #include <boost/preprocessor/stringize.hpp>
 
-#include <iomanip>
 #include <iostream>
 #include <type_traits>
 #include <cstdint>
@@ -17,22 +16,22 @@ class TraceDecoratedValue
 public:
     static const bool kHasDecode = true;
 
-    TraceDecoratedValue()
+    constexpr TraceDecoratedValue()
+        : _ref(nullptr)
     {}
 
     constexpr explicit TraceDecoratedValue(const T *v)
         : _ref(v)
-    {}
+    {
+    }
 
     void encode(char *buf) const
     {
-        const char *s = (const char*)_ref;
-        std::memcpy(buf, _ref, sizeof(T));
+        if (_ref) std::memcpy(buf, _ref, sizeof(T));
     }
 
     static const T &decode(const char *buf, size_t &sz)
     {
-        sz = sizeof(T);
         return *reinterpret_cast<const T *>(buf);
     }
 
@@ -43,24 +42,6 @@ public:
 
 private:
     const T *_ref;
-};
-
-template <size_t N>
-class TraceDecoratedValue<char [N]>
-{
-public:
-    static const bool kHasDecode = false;
-
-    explicit TraceDecoratedValue(const char (&)[N])
-    {}
-
-    void encode(char *buf) const
-    {}
-
-    constexpr size_t size() const
-    {
-        return 0;
-    }
 };
 
 template <typename T, typename... TRest>
@@ -79,6 +60,12 @@ template <typename T>
 constexpr TraceDecoratedValue<T> trace_decorate(const T &val)
 {
     return TraceDecoratedValue<T>(&val);
+}
+
+template <size_t N>
+TraceDecoratedValue<char [N]> trace_decorate(const char (&)[N])
+{
+    return TraceDecoratedValue<char [N]>();
 }
 
 template <uint64_t TraceTag>
