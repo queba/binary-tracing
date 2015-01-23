@@ -1,0 +1,3 @@
+[submodule "consthash"]
+	path = consthash
+	url = https://github.com/queba/consthash.git
